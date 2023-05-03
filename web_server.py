@@ -30,7 +30,7 @@ def open_socket(ip):
     print(connection)
     return connection
 
-def webpage(temperature, state):
+def webpage(temperature, state, button):
     #Template HTML
     html = f"""
             <!DOCTYPE html>
@@ -46,6 +46,7 @@ def webpage(temperature, state):
             </form>
             <p>LED is {state}</p>
             <p>Temperature is {temperature}</p>
+            <p>Button state: {button}</p>
             </body>
             </html>
             """
@@ -63,9 +64,11 @@ def serve(connection):
     state = 'OFF'
     led = machine.Pin("LED", machine.Pin.OUT)
     led.off()
+    button1 = Button(15)
 
     while True:
         client = connection.accept()[0]
+        
         request = client.recv(1024)
         request = str(request)
         
@@ -82,25 +85,13 @@ def serve(connection):
             led.off()
             state = 'OFF'
             
-        html = webpage(temperature, state)
+        html = webpage(temperature, state, button1.is_pressed)
         client.send(html)
         client.close()
 
 try:
-    led = machine.Pin("LED", machine.Pin.OUT)
-    but = Button(15)
-    
-    #ip = connect()
-    #connection = open_socket(ip)
-    #serve(connection)
-    while True:
-        if but.is_pressed:
-            print('yes')
-            led.on()
-            time.sleep(1)
-        else:
-            print('no')
-            led.off()
-            time.sleep(1)    
+    ip = connect()
+    connection = open_socket(ip)
+    serve(connection)   
 except KeyboardInterrupt:
     machine.reset()
