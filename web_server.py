@@ -34,6 +34,9 @@ def webpage(temperature, state):
     html = f"""
             <!DOCTYPE html>
             <html>
+            <head>
+            <meta http-equiv="refresh" content="1"/>
+            </head>
             <form action="./lighton">
             <input type="submit" value="Light on" />
             </form>
@@ -47,24 +50,39 @@ def webpage(temperature, state):
             """
     return str(html)
 
+def getTemp():
+    adc = machine.ADC(4)
+    ADC_voltage = adc.read_u16() * (3.3 / (65535))
+    temperature_celcius = 27 - (ADC_voltage - 0.706)/0.001721
+    temp_fahrenheit=32+(1.8*temperature_celcius)
+    return temperature_celcius, temp_fahrenheit
+    
 def serve(connection):
     #Start a web server
     state = 'OFF'
     led = machine.Pin("LED", machine.Pin.OUT)
     led.off()
-    temperature = 0
+
     while True:
+        print('123')
         client = connection.accept()[0]
         request = client.recv(1024)
         request = str(request)
+        print(request)
+        
+        temperature = getTemp()
+        
         try:
             request = request.split()[1]
         except IndexError:
             pass
         if request == '/lighton?':
             led.on()
-        elif request =='/lightoff?':
+            state = 'ON'
+        elif request == '/lightoff?':
             led.off()
+            state = 'OFF'
+            
         html = webpage(temperature, state)
         client.send(html)
         client.close()
