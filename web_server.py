@@ -1,7 +1,8 @@
 import network
 import socket
 from time import sleep
-from picozero import pico_temp_sensor, pico_led
+import time
+from picozero import pico_temp_sensor, pico_led, Button
 import machine
 
 ssid = 'huaweip40'
@@ -64,11 +65,9 @@ def serve(connection):
     led.off()
 
     while True:
-        print('123')
         client = connection.accept()[0]
         request = client.recv(1024)
         request = str(request)
-        print(request)
         
         temperature = getTemp()
         
@@ -88,8 +87,20 @@ def serve(connection):
         client.close()
 
 try:
-    ip = connect()
-    connection = open_socket(ip)
-    serve(connection)
+    led = machine.Pin("LED", machine.Pin.OUT)
+    but = Button(15)
+    
+    #ip = connect()
+    #connection = open_socket(ip)
+    #serve(connection)
+    while True:
+        if but.is_pressed:
+            print('yes')
+            led.on()
+            time.sleep(1)
+        else:
+            print('no')
+            led.off()
+            time.sleep(1)    
 except KeyboardInterrupt:
     machine.reset()
