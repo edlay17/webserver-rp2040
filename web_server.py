@@ -6,7 +6,7 @@ from picozero import pico_temp_sensor, pico_led, Button
 import machine
 
 ssid = 'huaweip40'
-password = '123456azx'
+password = '123456vvv'
 
 def connect():
     #Connect to WLAN
@@ -88,10 +88,28 @@ def serve(connection):
         html = webpage(temperature, state, button1.is_pressed)
         client.send(html)
         client.close()
+        
+def outputOnScreen(text):
+    sda=machine.Pin(16)
+    scl=machine.Pin(17)
+     
+    i2c=machine.I2C(0, sda=sda, scl=scl, freq=400000)
+     
+    from ssd1306 import SSD1306_I2C
+    oled = SSD1306_I2C(128, 32, i2c)
+     
+    print(i2c.scan())
+     
+    oled.text(text, 0, 0)
+    oled.text(text, 0, 10)
+    oled.text(text, 0, 20)
+    oled.show()
+    sleep(4)
 
 try:
-    ip = connect()
-    connection = open_socket(ip)
-    serve(connection)   
+    #ip = connect()
+    #connection = open_socket(ip)
+    #serve(connection)
+    outputOnScreen('hello world')
 except KeyboardInterrupt:
     machine.reset()
