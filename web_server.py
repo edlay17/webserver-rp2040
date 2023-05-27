@@ -105,6 +105,14 @@ def outputOnScreen(text):
     oled.text(text, 0, 20)
     oled.show()
     sleep(4)
+    
+def getCompassData():
+    sda=machine.Pin(18)
+    scl=machine.Pin(19)
+    
+    i2c=machine.I2C(0, sda=sda, scl=scl, freq=400000)
+    
+    
 
 try:
     #ip = connect()
