@@ -4,6 +4,7 @@ from time import sleep
 import time
 from picozero import pico_temp_sensor, pico_led, Button
 import machine
+from QMC5883 import QMC5883L
 
 ssid = 'huaweip40'
 password = '123456vvv'
@@ -26,8 +27,9 @@ def open_socket(ip):
     connection = socket.socket()
     connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     connection.bind(address)
-    connection.listen(1)
+    connection.listen(100)
     print(connection)
+        
     return connection
 
 def webpage(temperature, state, button):
@@ -36,8 +38,13 @@ def webpage(temperature, state, button):
             <!DOCTYPE html>
             <html>
             <head>
-            <meta http-equiv="refresh" content="1"/>
             </head>
+            <script>
+                let socket = new WebSocket('ws://192.168.43.153:80');
+
+
+                alert('done');
+            </script> 
             <form action="./lighton">
             <input type="submit" value="Light on" />
             </form>
@@ -89,6 +96,18 @@ def serve(connection):
         client.send(html)
         client.close()
         
+def send(connection):
+    client = connection.accept()[0]
+    print(client)
+    print('accepted')
+    
+    while True:
+        #request = client.recv(1024)
+        #request = str(request)
+        client.send('hello world')
+        print('sended')
+        sleep(1)
+        
 def outputOnScreen(text):
     sda=machine.Pin(16)
     scl=machine.Pin(17)
@@ -98,6 +117,7 @@ def outputOnScreen(text):
     from ssd1306 import SSD1306_I2C
     oled = SSD1306_I2C(128, 32, i2c)
      
+     
     print(i2c.scan())
      
     oled.text(text, 0, 0)
@@ -105,19 +125,28 @@ def outputOnScreen(text):
     oled.text(text, 0, 20)
     oled.show()
     sleep(4)
-    
-def getCompassData():
-    sda=machine.Pin(18)
-    scl=machine.Pin(19)
-    
-    i2c=machine.I2C(0, sda=sda, scl=scl, freq=400000)
-    
-    
 
 try:
     #ip = connect()
     #connection = open_socket(ip)
+    #send(connection)
     #serve(connection)
-    outputOnScreen('hello world')
+    #outputOnScreen('hello world')
+    
+    #sda=machine.Pin(16)
+    #scl=machine.Pin(17)
+     
+    #i2c=machine.I2C(0, sda=sda, scl=scl, freq=400000)
+    #print(i2c.scan())
+    
+    qmc=QMC5883L()
+    
+    print('jj')
+    
+    while True:
+       x, y = qmc.read()
+       print(qmc.heading(x, y))
+       sleep(0.01)
+    
 except KeyboardInterrupt:
     machine.reset()
