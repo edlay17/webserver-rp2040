@@ -1,0 +1,18 @@
+{% args gamename, score %}
+<!doctype html>
+<html>
+  <head>
+    <title>Microdot + uTemplate example</title>
+  </head>
+  <body>
+    <h1>Test title</h1>
+    {% if gamename %}
+    <p>Gamename: <b>{{ gamename }}</b>!</p>
+    {% endif %}
+    <ul>
+    {% for sc in score %}
+        <li>{{ sc }}</li>
+    {% endfor %}
+    </ul>
+  </body>
+</html>
