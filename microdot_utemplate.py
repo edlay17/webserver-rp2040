@@ -32,3 +32,4 @@ def render_template(template, *args, **kwargs):
         init_templates()
     render = _loader.load(template)
     return render(*args, **kwargs)
+

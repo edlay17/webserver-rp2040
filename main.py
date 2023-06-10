@@ -1,29 +1,29 @@
-from microdot import Microdot, Response
+from microdot_asyncio import Microdot, Response, send_file
 from microdot_utemplate import render_template
+from microdot_asyncio_websocket import with_websocket
 import time
 
 app = Microdot()
 Response.default_content_type = 'text/html'
 
 @app.route('/')
-def index(request):
-    return 'Hello, world!'
+async def index(request):
+    return render_template('index.html')
 
-@app.route('/orders', methods=['GET'])
-def index2(req):
-    gamename = "cool game"
-    score = ["1000", "2000", "3000"]
+@app.route('/ws')
+@with_websocket
+async def read_sensor(request, ws):
+    while True:
+        #data = await ws.receive()
+        time.sleep(.1)
+        await ws.send(str('hello ws'))
 
-    #return 'orders'
-    return render_template('game.html', gamename=gamename, score=score)
-
-#@app.route('/ws')
-#@with_websocket
-#async def read_sensor(request, ws):
-#    while True:
-        # data = await ws.receive()W
-#        time.sleep(.1)
-#        await ws.send(str('hello ws'))
+@app.route("/static/<path:path>")
+def static(request, path):
+    if ".." in path:
+        # directory traversal is not allowed
+        return "Not found", 404
+    return send_file("static/" + path)
 
 if __name__ == '__main__':
     app.run(debug=True)
