@@ -1,10 +1,36 @@
 from microdot_asyncio import Microdot, Response, send_file
 from microdot_utemplate import render_template
 from microdot_asyncio_websocket import with_websocket
+from joystick_module import JST
 import time
 
 app = Microdot()
 Response.default_content_type = 'text/html'
+
+joystick = JST(27, 26, 16)
+
+prevX = 0
+prevY = 0
+prevB = 0
+
+def checkChanges(xValue, yValue, bValue):
+    global prevX
+    global prevY
+    global prevB
+    
+    diffX = abs(xValue - prevX)
+    diffY = abs(yValue - prevY)
+    diffB = abs(bValue - prevB)
+    
+    isXChanged = diffX > 5000
+    isYChanged = diffY > 5000
+    isBChanged = diffB > 0
+    
+    prevX = xValue
+    prevY = yValue
+    prevB = bValue
+    
+    return isXChanged or isYChanged or isBChanged
 
 @app.route('/')
 async def index(request):
@@ -13,10 +39,17 @@ async def index(request):
 @app.route('/ws')
 @with_websocket
 async def read_sensor(request, ws):
+    prevX = 0
+    prevY = 0
+    prevB = 0
+    
     while True:
         #data = await ws.receive()
-        time.sleep(.1)
-        await ws.send(str('hello ws'))
+        xValue, yValue, bValue = joystick.get_value()
+        
+        if checkChanges(xValue, yValue, bValue):
+            await ws.send(str(xValue) + ", " + str(yValue) + " -- " + str(bValue))
+        
 
 @app.route("/static/<path:path>")
 def static(request, path):
