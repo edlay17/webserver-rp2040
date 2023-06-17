@@ -1,0 +1,305 @@
+<html>
+    <body>
+        <audio id="audioElement" src="Untitled_song.mp3" autoplay loop></audio>
+        <script>
+            let startDate = null;
+            document.addEventListener('DOMContentLoaded', () => {
+                const $game = document.getElementById('game');
+        
+                const game = $game.getContext('2d');
+        
+                $game.width = innerWidth;
+                $game.height = innerHeight;
+        
+                class Player {
+                    constructor(x, y, radius, color, velocity) {
+                        this.x = x;
+                        this.y = y;
+                        this.radius = radius;
+                        this.color = color;
+                        this.velocity = velocity;
+                        this.killed = 0;
+                        this.missed = 0;
+                    }
+        
+                    draw() {
+                        game.beginPath();
+                        game.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
+                        game.fillStyle = this.color;
+                        game.fill();
+                    }
+        
+                    update() {
+                        this.draw();
+                        this.x = this.x + this.velocity.x;
+                        this.y = this.y + this.velocity.y;
+                    }
+                }
+        
+                class Projectile {
+                    constructor(x, y, radius, color, velocity) {
+                        this.x = x;
+                        this.y = y;
+                        this.radius = radius;
+                        this.color = color;
+                        this.velocity = velocity;
+                    }
+        
+                    draw() {
+                        game.beginPath();
+                        game.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
+                        game.fillStyle = this.color;
+                        game.fill();
+                    }
+        
+                    update() {
+                        this.draw();
+                        this.x = this.x + this.velocity.x;
+                        this.y = this.y + this.velocity.y;
+                    }
+                }
+        
+                class Enemy {
+                    constructor(x, y, radius, color, velocity) {
+                        this.x = x;
+                        this.y = y;
+                        this.radius = radius;
+                        this.color = color;
+                        this.velocity = velocity;
+                    }
+        
+                    draw() {
+                        game.beginPath();
+                        game.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
+                        game.fillStyle = this.color;
+                        game.fill();
+                    }
+        
+                    update() {
+                        this.draw();
+                        this.x = this.x + this.velocity.x;
+                        this.y = this.y + this.velocity.y;
+                    }
+                }
+        
+                const xCenter = $game.width / 2;
+                const yCenter = $game.height / 2
+        
+                const player = new Player(xCenter, yCenter, 20, '#F1F6F9', 
+                {
+                    x: 0,
+                    y: 0,
+                });
+                const projectiles = [];
+                const enemies = [];
+        
+                function animate() {
+                    requestAnimationFrame(animate);
+
+                    if (player.missed > 3) {
+                        cancelAnimationFrame(animate);
+                        $alert = document.getElementById('alert');
+                        $alert.style.display = "flex";
+                        $alert.innerText = 'game over';
+                        $game.style.display = "none";
+
+                        projectiles.length = 0;
+                        enemies.length = 0;
+                        startDate = null;
+                    }
+        
+                    game.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    game.fillRect(0, 0, $game.width, $game.height);
+        
+                    player.update();
+        
+                    projectiles.forEach(projectile => {
+                        projectile.update()
+                    })
+
+                    if (player.x + player.radius >= $game.width) {
+                        player.x = $game.width - player.radius - 10;
+                    }
+                    if (player.x - player.radius <= 0) {
+                        player.x = 0 + player.radius + 10;
+                    }
+                    if (player.y + player.radius >= $game.height) {
+                        player.y = $game.height - player.radius - 10;
+                    }
+                    if (player.y - player.radius <= 0) {
+                        player.y = 0 + player.radius + 10;
+                    }
+        
+                    enemies.forEach((enemy, enemyIndex) => {
+                        enemy.update();
+        
+                        const playerDist = Math.hypot(
+                            enemy.x - player.x, 
+                            enemy.y - player.y,
+                        )
+        
+                        const endMapDist = $game.height - enemy.radius - enemy.y;
+                        if (endMapDist < 1) {
+                            setTimeout(() => {
+                                enemies.splice(enemyIndex, 1);
+                                player.missed = player.missed + 1;
+                            }, 0);
+                        }
+        
+                        if (playerDist - enemy.radius - player.radius < 1) {
+                            setTimeout(() => {
+                                enemies.splice(enemyIndex, 1);
+                                player.killed = player.killed + 1;
+                            }, 0)
+                        }
+        
+                        projectiles.forEach((projectile, projectileIndex) => {
+                            const dist = Math.hypot(
+                                projectile.x - enemy.x, 
+                                projectile.y - enemy.y
+                            );
+        
+                            if (dist - enemy.radius - projectile.radius < 1) {
+                                setTimeout(() => {
+                                    enemies.splice(enemyIndex, 1);
+                                    projectiles.splice(projectileIndex, 1);
+
+                                    player.killed = player.killed + 1;
+                                }, 0) 
+                            } 
+                        })
+                    })
+                }
+        
+                function spawnEnemies() {
+                    setInterval(() => {
+                        const x = Math.random() * ($game.width - 30) + 30;
+                        const y = Math.random() * 40;
+                        const radius = Math.random() * 40 + 20;
+                        const color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+                        const velocity = {
+                            x: 0,
+                            y: 1,
+                        }
+        
+                        enemies.push(new Enemy(x, y, radius, color, velocity))
+                    }, 2000)
+                }
+
+
+                function startGame() {
+                    animate();
+                    spawnEnemies();
+                    document.getElementById('audioElement').play();
+                    startDate = new Date();
+                }
+        
+                const targetUrl = `ws://192.168.43.153:5000/ws`;
+                let websocket;
+                window.addEventListener("load", () => initializeSocket());
+        
+                function initializeSocket() {
+                    console.log("Opening WebSocket connection MicroPython Server...");
+                    websocket = new WebSocket(targetUrl);
+                    websocket.onopen = onOpen;
+                    websocket.onclose = onClose;
+                    websocket.onmessage = onMessage;
+                }
+        
+                function onOpen(event) {
+                    console.log("Starting connection to WebSocket server..");
+
+                    $alert = document.getElementById('alert');
+                    $alert.style.display = "flex";
+                    $alert.innerText = 'Press button on joystick to start!';
+                }
+                function onClose(event) {
+                    console.log("Closing connection to server..");
+                    setTimeout(initializeSocket, 2000);
+                }
+        
+                function onMessage(event) {
+                    const data = event.data.split('/');
+        
+                    if (data[2] === "0") {
+                        if (document.getElementById('alert').style.display === "flex") {
+                            document.getElementById('alert').style.display = "none";
+                            startGame();
+                        }
+
+                        projectiles.push(new Projectile(
+                            player.x, 
+                            player.y, 
+                            10, 
+                            'blue', 
+                            {
+                                x: 0,
+                                y: -6,
+                            }
+                        ));
+                    }
+        
+                    let x = 0;
+                    let y = 0;
+        
+                    if (data[1] < 20000) {
+                        x = 4;
+                        y = 0;
+                    }
+                    if (data[1] > 50000) {
+                        x = -4;
+                        y = 0;
+                    }
+                    if (data[0] < 20000) {
+                        x = 0;
+                        y = -4;
+                    }
+                    if (data[0] > 50000) {
+                        x = 0;
+                        y = 4;
+                    }
+                    if (data[1] > 25000 & data[1] < 45000 & data[0] > 25000 & data[0] < 45000) {
+                        x = 0;
+                        y = 0;
+                    }
+        
+                    player.velocity.y = y;
+                    player.velocity.x = x;
+
+                    const time = startDate 
+                        ? Math.round((new Date().getTime() - startDate.getTime()) / 1000)
+                        : 0
+
+                    sendMessage(`killed: ${player.killed}///missed: ${player.missed}/4///time: ${time}s`);
+                }
+        
+                function sendMessage(message) {
+                    websocket.send(message);
+                }
+            })  
+        </script>
+        
+        <style>
+            body {
+                margin: 0;
+            }
+            #alert {
+                position: absolute;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                background: rgba(228, 123, 120, 0.6);
+                font-size: 36px;
+            }
+        </style>
+        <div id="alert">
+        </div>
+        <canvas id="game">
+        </canvas>
+    </body>
+</html>
+
+
+
